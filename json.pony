@@ -1,5 +1,4 @@
 use "collections"
-use "regex"
 
 primitive JNull
 primitive JNumber
