@@ -62,7 +62,6 @@ class JSON
   fun ref _reset(i: U64) =>
     _offset = i
 
-
   fun _current(): U8 =>
     try
       _input(_offset)
@@ -81,7 +80,6 @@ class JSON
       _advance()
       _skip_whitespace()
     end
-    None
 
   fun ref _skip_whitespace() =>
     while _offset < _input.size() do
@@ -253,27 +251,25 @@ class JSON
     end
     (JObject, map)
 
-  fun stringify(env: Env, indent: String = ""): String =>
+  fun box stringify(indent: String = ""): String =>
     match _value
     | (ParseError, var pos: U64, var msg: String) => "Error at position " + pos.string() + ": " + msg
-    | JNull => env.out.print("Stringifying null"); "null"
-    | (JNumber, var n : U64) => env.out.print("Stringifying U64"); n.string()
-    | (JNumber, var n : I64) => env.out.print("Stringifying I64"); n.string()
-    | (JNumber, var n : F32) => env.out.print("Stringifying F32"); n.string()
-    | (JNumber, var n : F64) => env.out.print("Stringifying F64"); n.string()
-    | (JString, var s : String) => env.out.print("Stringifying string"); s.string()
+    | JNull => "null"
+    | (JNumber, var n : U64) => n.string()
+    | (JNumber, var n : I64) => n.string()
+    | (JNumber, var n : F32) => n.string()
+    | (JNumber, var n : F64) => n.string()
+    | (JString, var s : String) => s.string()
     | (JArray,  var list : this->List[JSON] box) =>
-      env.out.print("Stringifying array")
       var out = "["
       for item in list.values() do
-        out = out + "\n  " + indent + item.stringify(env, indent + "  ")
+        out = out + "\n  " + indent + item.stringify(indent + "  ")
       end
       out + "\n" + indent + "]"
     | (JObject, var map : this->Map[String, JSON] box) =>
-      env.out.print("Stringifying object")
       var out = "{"
       for (k, v) in map.pairs() do
-        out = out + "\n  " + indent + k + ": " + v.stringify(env, indent + "  ")
+        out = out + "\n  " + indent + k + ": " + v.stringify(indent + "  ")
       end
       out + "\n" + indent + "}"
     else
