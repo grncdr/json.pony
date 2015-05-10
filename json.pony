@@ -250,27 +250,93 @@ class JSON
     end
     (JObject, map)
 
-  fun box stringify(indent: String = ""): String =>
-    match _value
+  fun box stringify(indent: U8 = 0): String =>
+    JSONFormatter(indent)(_value)
+
+
+class JSONFormatter
+  var _indent : String
+  var _kv_sep : String = ":"
+
+
+  new create(indent : U8 = 0) =>
+    _indent = ""
+    var i = indent
+    while i > 0 do
+      _indent = _indent + " "
+      i = i - 1
+    end
+    if indent > 0 then
+      _kv_sep = ": "
+    end
+
+  fun apply(value: JSONValue): String =>
+    _format(value)
+
+  fun _format(value: JSONValue, indent : String = ""): String =>
+    match value
     | (ParseError, var pos: U64, var msg: String) => "Error at position " + pos.string() + ": " + msg
     | JNull => "null"
     | (JNumber, var n : U64) => n.string()
     | (JNumber, var n : I64) => n.string()
     | (JNumber, var n : F32) => n.string()
     | (JNumber, var n : F64) => n.string()
-    | (JString, var s : String) => s.string()
-    | (JArray,  var list : this->List[JSON] box) =>
-      var out = "["
+    | (JString, var s : String) => _quote_string(s)
+    | (JArray,  var list : box->List[JSON] box) =>
+      var items = Array[String](list.size())
       for item in list.values() do
-        out = out + "\n  " + indent + item.stringify(indent + "  ")
+        items.push(_format(item.value(), indent + _indent))
       end
-      out + "\n" + indent + "]"
-    | (JObject, var map : this->Map[String, JSON] box) =>
-      var out = "{"
+      "[" + _join(items, indent) + "]"
+    | (JObject, var map : box->Map[String, JSON] box) =>
+      var items = Array[String](map.size())
       for (k, v) in map.pairs() do
-        out = out + "\n  " + indent + k + ": " + v.stringify(indent + "  ")
+        items.push(_quote_string(k) + _kv_sep + _format(v.value(), indent + _indent))
       end
-      out + "\n" + indent + "}"
+      "{" + _join(items, indent) + "}"
     else
       "Unknown json type"
     end
+
+  fun _join(strings: Array[String], indent: String): String =>
+    let nli = if _indent.size() > 0 then "\n" + indent + _indent else _indent end
+    let glue = "," + nli
+    var out = nli
+    var iter = strings.values()
+    for string in iter do
+      out = out + string + if iter.has_next() then glue else "" end
+    end
+    out + "\n" + indent
+
+  fun _quote_string(string: String): String =>
+    "\"" + string + "\""
+
+
+// TODO - figure out ponytest
+actor Main
+  new create(env: Env) =>
+    var valid_input : String = "{\"yes\": 34.6, \"no\": 45, \"maybe\": [\"ok\", 1]}"
+    env.out.print("Input: " + valid_input)
+
+    var json = JSON.parse(valid_input)
+
+    match json.value()
+    | (JObject, var map : Map[String, JSON] box) =>
+      match try map("maybe").value() end
+      | (JArray, var list : List[JSON] box) =>
+        match try list(0).value() end
+        | (JString, var str : String) =>
+          env.out.print("Value of .maybe[0]: " + str)
+        end
+      end
+    end
+
+    env.out.print("Formatted: " + json.stringify(1))
+
+    var invalid_input : String = "{\"numbers\": [1, 2, 3"
+
+    match JSON.parse(invalid_input).value()
+    | (ParseError, var pos : U64, var message : String) =>
+      env.out.print("Invalid JSON: " + message + " at character " + pos.string())
+    end
+

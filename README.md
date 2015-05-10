@@ -12,26 +12,28 @@ actor Main
     var valid_input : String = "{\"yes\": 34.6, \"no\": 45, \"maybe\": [\"ok\", 1]}"
     env.out.print("Input: " + valid_input)
 
-    var json : JSON.parse(valid_input)
-  
+    var json = JSON.parse(valid_input)
+
     match json.value()
-    | (JObject, m : Map[String, JSON] box) =>
-      try match m("maybe")
-      | (JArray, l : List[JSON] box) =>
-        try match m(0)
-        | (JString, s : String) => env.out.print("Value of .maybe[0]: " + s)
-        end end
-      end end
+    | (JObject, var map : Map[String, JSON] box) =>
+      match try map("maybe").value() end
+      | (JArray, var list : List[JSON] box) =>
+        match try list(0).value() end
+        | (JString, var str : String) =>
+          env.out.print("Value of .maybe[0]: " + str)
+        end
+      end
     end
+
+    env.out.print("Formatted: " + json.stringify(1))
 
     var invalid_input : String = "{\"numbers\": [1, 2, 3"
 
     match JSON.parse(invalid_input).value()
     | (ParseError, var pos : U64, var message : String) =>
-      env.out.print("Invalid JSON: \"" + message + "\" at character " + pos.string())
+      env.out.print("Invalid JSON: " + message + " at character " + pos.string())
     end
 
-    env.out.print("Formatted: " + json.stringify(env))
 ```
 
 ## Caveats
