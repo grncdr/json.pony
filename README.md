@@ -19,7 +19,7 @@ actor Main
       try match m("maybe")
       | (JArray, l : List[JSON] box) =>
         try match m(0)
-        | (JString, s : String) => env.out.print("Value of .maybe[0]: " + s
+        | (JString, s : String) => env.out.print("Value of .maybe[0]: " + s)
         end end
       end end
     end
