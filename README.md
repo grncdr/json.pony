@@ -17,7 +17,7 @@ actor Main
     match json.value()
     | (JObject, m : Map[String, JSON] box) =>
       try match m("maybe")
-      | (JArray, l : List[JSON]) =>
+      | (JArray, l : List[JSON] box) =>
         try match m(0)
         | (JString, s : String) => env.out.print("Value of .maybe[0]: " + s
         end end
